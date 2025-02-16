@@ -4,3 +4,5 @@ pytest-cov
 black
 isort
 mypy==1.8.0
+pyyaml
+types-PyYAML
