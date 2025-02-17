@@ -1,8 +1,11 @@
 """utilities for navigating remote directories using rclone"""
 
 import functools
+import logging
 import subprocess
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 
 @functools.lru_cache(maxsize=128)
@@ -13,8 +16,12 @@ def _list_dirs(current_path: str, remote: str) -> List[str]:
             command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
         return [line.rstrip("/ \n\r") for line in result.stdout.splitlines()]
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        logger.error("Failed to list directories for '%s': %s", current_path, e.stderr.strip())
         return []
+    except (FileNotFoundError, PermissionError) as exc:
+        logger.error("Error running rclone for '%s': %s", current_path, exc)
+        raise
 
 
 def navigate_gdrive(remote: str, start_path: str = "") -> None:

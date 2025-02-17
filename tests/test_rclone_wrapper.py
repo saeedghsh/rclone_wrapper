@@ -11,6 +11,12 @@ from rclone_wrapper.mounting import is_mounted, mount, unmount
 from rclone_wrapper.navigation import _list_dirs, navigate_gdrive
 
 
+@pytest.fixture(autouse=True)
+def clear_list_dirs_cache() -> None:
+    """Automatically clear `_list_dirs` cache before each test."""
+    _list_dirs.cache_clear()
+
+
 @pytest.mark.parametrize(
     "current_path, remote, mock_output, expected",
     [
@@ -27,9 +33,31 @@ def test_list_dirs(current_path: str, remote: str, mock_output: str, expected: L
 
 
 def test_list_dirs_failure() -> None:
-    _list_dirs.cache_clear()  # Clear cached results before running the test
-    with patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "rclone")):
-        assert _list_dirs("", "gdrive") == []
+    with patch(
+        "subprocess.run",
+        side_effect=subprocess.CalledProcessError(1, "rclone", stderr="Some error"),
+    ):
+        assert _list_dirs("", "gdrive") == []  # Ensure it gracefully returns an empty list
+
+
+def test_list_dirs_file_not_found() -> None:
+    with patch("subprocess.run", side_effect=FileNotFoundError("rclone not found")):
+        try:
+            _list_dirs("", "gdrive")
+        except FileNotFoundError as e:
+            assert str(e) == "rclone not found"
+        else:
+            assert False, "Expected FileNotFoundError but did not get one"
+
+
+def test_list_dirs_permission_error() -> None:
+    with patch("subprocess.run", side_effect=PermissionError("Permission denied")):
+        try:
+            _list_dirs("", "gdrive")
+        except PermissionError as e:
+            assert str(e) == "Permission denied"
+        else:
+            assert False, "Expected PermissionError but did not get one"
 
 
 def test_navigate_gdrive(monkeypatch: pytest.MonkeyPatch) -> None:
