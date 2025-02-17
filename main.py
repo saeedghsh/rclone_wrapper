@@ -12,13 +12,13 @@ from logger_wrapper.logger_wrapper import setup_logger
 from rclone_wrapper.comparison import compare_folders
 from rclone_wrapper.configuration import read_config
 from rclone_wrapper.mounting import mount, unmount
-from rclone_wrapper.navigation import navigate_gdrive
+from rclone_wrapper.navigation import navigate
 
 logger = setup_logger(name_appendix=__name__)
 
 
 def _main_navigate(_: argparse.Namespace, config: SimpleNamespace) -> None:
-    navigate_gdrive(config.remote)
+    navigate(config.remote)
 
 
 def _main_mount(args: argparse.Namespace, config: SimpleNamespace) -> None:

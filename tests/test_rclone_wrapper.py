@@ -9,7 +9,7 @@ import pytest
 from rclone_wrapper.comparison import compare_folders
 from rclone_wrapper.configuration import read_config
 from rclone_wrapper.mounting import is_mounted, mount, unmount
-from rclone_wrapper.navigation import _list_dirs, navigate_gdrive
+from rclone_wrapper.navigation import _list_dirs, navigate
 
 
 @pytest.fixture(autouse=True)
@@ -61,12 +61,12 @@ def test_list_dirs_permission_error() -> None:
             assert False, "Expected PermissionError but did not get one"
 
 
-def test_navigate_gdrive(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_navigate(monkeypatch: pytest.MonkeyPatch) -> None:
     inputs = iter(["0", "..", "q"])
     monkeypatch.setattr("builtins.input", lambda: next(inputs))
     with patch("rclone_wrapper.navigation._list_dirs", return_value=["subdir"]):
         with patch("builtins.print") as mock_print:
-            navigate_gdrive("gdrive", "")
+            navigate("gdrive", "")
         # Ensure that print was called at least once
         assert mock_print.call_args_list, "Expected print statements were not called."
         # Extract printed lines
@@ -77,45 +77,45 @@ def test_navigate_gdrive(monkeypatch: pytest.MonkeyPatch) -> None:
         assert any("Final remote path: /" in line for line in printed_lines)
 
 
-def test_navigate_gdrive_no_subdirs(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_navigate_no_subdirs(monkeypatch: pytest.MonkeyPatch) -> None:
     inputs = iter(["q"])
     monkeypatch.setattr("builtins.input", lambda: next(inputs))
     with patch("rclone_wrapper.navigation._list_dirs", return_value=[]):
         with patch("builtins.print") as mock_print:
-            navigate_gdrive("gdrive", "")
+            navigate("gdrive", "")
 
     printed_lines = [call.args[0] for call in mock_print.call_args_list if call.args]
     assert "No sub-directories found." in printed_lines
 
 
-def test_navigate_gdrive_root_path(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_navigate_root_path(monkeypatch: pytest.MonkeyPatch) -> None:
     inputs = iter([".", "q"])
     monkeypatch.setattr("builtins.input", lambda: next(inputs))
     with patch("rclone_wrapper.navigation._list_dirs", return_value=["subdir"]):
         with patch("builtins.print") as mock_print:
-            navigate_gdrive("gdrive", "some/path")
+            navigate("gdrive", "some/path")
 
     printed_lines = [call.args[0] for call in mock_print.call_args_list if call.args]
     assert "Final remote path: /" in printed_lines
 
 
-def test_navigate_gdrive_invalid_index(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_navigate_invalid_index(monkeypatch: pytest.MonkeyPatch) -> None:
     inputs = iter(["10", "q"])
     monkeypatch.setattr("builtins.input", lambda: next(inputs))
     with patch("rclone_wrapper.navigation._list_dirs", return_value=["subdir"]):
         with patch("builtins.print") as mock_print:
-            navigate_gdrive("gdrive", "")
+            navigate("gdrive", "")
 
     printed_lines = [call.args[0] for call in mock_print.call_args_list if call.args]
     assert "Invalid selection: index out of range." in printed_lines
 
 
-def test_navigate_gdrive_invalid_input(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_navigate_invalid_input(monkeypatch: pytest.MonkeyPatch) -> None:
     inputs = iter(["invalid", "q"])
     monkeypatch.setattr("builtins.input", lambda: next(inputs))
     with patch("rclone_wrapper.navigation._list_dirs", return_value=["subdir"]):
         with patch("builtins.print") as mock_print:
-            navigate_gdrive("gdrive", "")
+            navigate("gdrive", "")
 
     printed_lines = [call.args[0] for call in mock_print.call_args_list if call.args]
     assert "Invalid input. Please enter a number, '.', '..', or 'q'." in printed_lines
