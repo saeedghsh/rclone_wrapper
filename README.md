@@ -28,11 +28,19 @@ $ pip install -r requirements.txt
 $ python -m main navigate
 ```
 
-## Ignoring changes in configuration file
-**Note:** this is done once and don't need to be repeated.
+## Keeping Configuration File Changes Untracked by Git
+Once set, these commands do not need to be repeated.
+
+**Ignore Local Changes (Git Won't Track Updates)**
 ```bash
 git update-index --assume-unchanged rclone_wrapper/config.yaml
-git update-index --no-assume-unchanged rclone_wrapper/config.yaml # To undo
+git update-index --no-assume-unchanged rclone_wrapper/config.yaml # to revert
+```
+
+**Prevent File Reset on `git reset --hard`**
+```bash
+git update-index --skip-worktree rclone_wrapper/config.yaml
+git update-index --no-skip-worktree rclone_wrapper/config.yaml # To undo
 ```
 
 ## TODO
