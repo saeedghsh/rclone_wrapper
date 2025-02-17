@@ -1,6 +1,7 @@
 .vscode/
 ignore/
 logs/
+results/
 nohup.out
 
 *.pyc

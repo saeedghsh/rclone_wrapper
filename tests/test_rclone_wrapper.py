@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
+from rclone_wrapper.comparison import compare_folders
 from rclone_wrapper.configuration import read_config
 from rclone_wrapper.mounting import is_mounted, mount, unmount
 from rclone_wrapper.navigation import _list_dirs, navigate_gdrive
@@ -217,3 +218,42 @@ def test_unmount_error() -> None:
             mock_logger.assert_called_with(
                 "'%s' is already unmounted or not a valid mount point.", "/mnt/test"
             )
+
+
+@pytest.mark.parametrize(
+    "returncode, stdout, stderr, expected, expect_diff_file",
+    [
+        (0, "", "", True, False),  # No differences, no file written
+        (1, "Differences found", "Error log", False, True),  # Differences found, file written
+    ],
+)
+def test_compare_folders(
+    returncode: int, stdout: str, stderr: str, expected: bool, expect_diff_file: bool
+) -> None:
+    with (
+        patch(
+            "subprocess.run",
+            return_value=MagicMock(returncode=returncode, stdout=stdout, stderr=stderr),
+        ),
+        patch("rclone_wrapper.comparison.logger.info") as mock_logger,
+        patch("builtins.open", mock_open()) as mock_file,
+    ):
+        result = compare_folders("folder1", "folder2", "diff.txt")
+        assert result == expected
+        mock_logger.assert_called()  # Ensure logging happened
+
+        # Ensure the diff file was only written if differences were detected
+        if expect_diff_file:
+            mock_file.assert_called_once_with("diff.txt", "w", encoding="utf-8")
+        else:
+            mock_file.assert_not_called()
+
+
+def test_compare_folders_exception() -> None:
+    with (
+        patch("subprocess.run", side_effect=OSError("mock error")),
+        patch("rclone_wrapper.comparison.logger.error") as mock_logger,
+    ):
+        with pytest.raises(OSError):
+            compare_folders("folder1", "folder2", "diff.txt")
+        mock_logger.assert_called()  # Ensure an error was logged

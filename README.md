@@ -38,6 +38,7 @@ Run commands
 ```bash
 $ python -m main navigate
 $ python -m main mount --remote_folder <remote-folder> --mount_point <mount-point>
+$ python -m main compare --remote-folder <remote-folder> --local-folder <local-folder>
 ```
 
 ## Development
