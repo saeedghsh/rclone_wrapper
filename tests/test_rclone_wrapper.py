@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 
 from rclone_wrapper.configuration import read_config
+from rclone_wrapper.mounting import is_mounted, mount, unmount
 from rclone_wrapper.navigation import _list_dirs, navigate_gdrive
 
 
@@ -114,3 +115,77 @@ def test_read_config_invalid_format() -> None:
             result = read_config()
     assert isinstance(result, SimpleNamespace)
     assert vars(result) == {}
+
+
+@pytest.mark.parametrize(
+    "returncode, expected",
+    [(0, True), (1, False)],
+)
+def test_is_mounted(returncode: int, expected: bool) -> None:
+    with patch("subprocess.run") as mock_run:
+        mock_run.side_effect = (
+            subprocess.CalledProcessError(returncode, "mountpoint") if returncode else None
+        )
+        result = is_mounted("/mnt/test")
+        assert result == expected
+
+
+def test_is_mounted_error() -> None:
+    with patch("subprocess.run", side_effect=FileNotFoundError("mountpoint not found")):
+        with pytest.raises(FileNotFoundError):
+            is_mounted("/mnt/test")
+
+
+def test_mount_already_mounted() -> None:
+    with patch("rclone_wrapper.mounting.is_mounted", return_value=True):
+        with patch("rclone_wrapper.mounting.logger.error") as mock_logger:
+            mount("remote_folder", "/mnt/test", "gdrive")
+            assert mock_logger.call_args[0][0] == "'%s' is already mounted."
+            assert mock_logger.call_args[0][1] == "/mnt/test"
+
+
+def test_mount_success() -> None:
+    with patch("rclone_wrapper.mounting.is_mounted", return_value=False):
+        with (
+            patch("os.makedirs") as mock_makedirs,
+            patch("subprocess.Popen") as mock_popen,
+            patch("rclone_wrapper.mounting.logger.info") as mock_logger,
+        ):
+            mount("remote_folder", "/mnt/test", "gdrive")
+            mock_makedirs.assert_called_with("/mnt/test", exist_ok=True)
+            mock_popen.assert_called()
+            mock_logger.assert_called_with("Mounted '%s' to '%s", "remote_folder", "/mnt/test")
+
+
+def test_unmount_not_mounted() -> None:
+    with patch("rclone_wrapper.mounting.is_mounted", return_value=False):
+        with patch("rclone_wrapper.mounting.logger.error") as mock_logger:
+            unmount("/mnt/test")
+            mock_logger.assert_called_with("'%s' is not a mount point.", "/mnt/test")
+
+
+def test_unmount_success() -> None:
+    with patch("rclone_wrapper.mounting.is_mounted", return_value=True):
+        with (
+            patch("subprocess.run") as mock_run,
+            patch("rclone_wrapper.mounting.logger.info") as mock_logger,
+        ):
+            mock_run.return_value = MagicMock(returncode=0)
+            unmount("/mnt/test")
+            mock_run.assert_called_with(["fusermount", "-uz", "/mnt/test"], check=True)
+            mock_logger.assert_called_with("Unmounted '%s'", "/mnt/test")
+
+
+def test_unmount_error() -> None:
+    with patch("rclone_wrapper.mounting.is_mounted", return_value=True):
+        with (
+            patch(
+                "subprocess.run", side_effect=subprocess.CalledProcessError(1, "fusermount")
+            ) as mock_run,
+            patch("rclone_wrapper.mounting.logger.error") as mock_logger,
+        ):
+            unmount("/mnt/test")
+            mock_run.assert_called_with(["fusermount", "-uz", "/mnt/test"], check=True)
+            mock_logger.assert_called_with(
+                "'%s' is already unmounted or not a valid mount point.", "/mnt/test"
+            )

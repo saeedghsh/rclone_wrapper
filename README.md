@@ -23,9 +23,17 @@ $ copy_from_gdrive # execute to see help
 ```
 
 **Python version**:
+The rclone config name for the remote should be placed in `rclone_wrapper/config.yaml`.
+
+Make sure dependencies are installed
 ```bash
 $ pip install -r requirements.txt
+```
+
+Run commands
+```bash
 $ python -m main navigate
+$ python -m main mount --remote_folder <remote-folder> --mount_point <mount-point>
 ```
 
 ## Keeping Configuration File Changes Untracked by Git
