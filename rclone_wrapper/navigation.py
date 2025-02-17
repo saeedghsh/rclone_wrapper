@@ -17,7 +17,7 @@ def _list_dirs(current_path: str, remote: str) -> List[str]:
         return []
 
 
-def navigate_gdrive(remote: str, start_path: str) -> None:
+def navigate_gdrive(remote: str, start_path: str = "") -> None:
     """
     Interactively navigate the remote directories using rclone.
     The remote and initial path are provided by the caller.
