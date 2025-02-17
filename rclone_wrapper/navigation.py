@@ -1,9 +1,11 @@
 """utilities for navigating remote directories using rclone"""
 
+import functools
 import subprocess
 from typing import List
 
 
+@functools.lru_cache(maxsize=128)
 def _list_dirs(current_path: str, remote: str) -> List[str]:
     command = ["rclone", "lsf", f"{remote}:{current_path}", "--dirs-only"]
     try:

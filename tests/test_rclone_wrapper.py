@@ -25,6 +25,7 @@ def test_list_dirs(current_path: str, remote: str, mock_output: str, expected: L
 
 
 def test_list_dirs_failure() -> None:
+    _list_dirs.cache_clear()  # Clear cached results before running the test
     with patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "rclone")):
         assert _list_dirs("", "gdrive") == []
 
