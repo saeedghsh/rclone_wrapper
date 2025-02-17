@@ -1,5 +1,6 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring
 import subprocess
+from types import SimpleNamespace
 from typing import List
 from unittest.mock import MagicMock, mock_open, patch
 
@@ -92,22 +93,24 @@ def test_navigate_gdrive_invalid_input(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_read_config() -> None:
     mock_yaml_content = "key1: value1\nkey2: value2"
-    expected_result = {"key1": "value1", "key2": "value2"}
+    expected_result = SimpleNamespace(key1="value1", key2="value2")
     with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
-        with patch("yaml.safe_load", return_value=expected_result):
+        with patch("yaml.safe_load", return_value={"key1": "value1", "key2": "value2"}):
             result = read_config()
-    assert result == expected_result
+    assert vars(result) == vars(expected_result)
 
 
 def test_read_config_empty_file() -> None:
     with patch("builtins.open", mock_open(read_data="")):
         with patch("yaml.safe_load", return_value=None):
             result = read_config()
-    assert result == {}
+    assert isinstance(result, SimpleNamespace)
+    assert vars(result) == {}
 
 
 def test_read_config_invalid_format() -> None:
     with patch("builtins.open", mock_open(read_data="invalid: [data, no_colon]")):
         with patch("yaml.safe_load", return_value=None):
             result = read_config()
-    assert result == {}
+    assert isinstance(result, SimpleNamespace)
+    assert vars(result) == {}
