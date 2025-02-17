@@ -1,3 +1,9 @@
+[![black](https://github.com/saeedghsh/rclone_wrapper/actions/workflows/formatting.yml/badge.svg?branch=master)](https://github.com/saeedghsh/rclone_wrapper/actions/workflows/formatting.yml)
+[![pylint](https://github.com/saeedghsh/rclone_wrapper/actions/workflows/pylint.yml/badge.svg?branch=master)](https://github.com/saeedghsh/rclone_wrapper/actions/workflows/pylint.yml)
+[![mypy](https://github.com/saeedghsh/rclone_wrapper/actions/workflows/type-check.yml/badge.svg?branch=master)](https://github.com/saeedghsh/rclone_wrapper/actions/workflows/type-check.yml)
+[![pytest](https://github.com/saeedghsh/rclone_wrapper/actions/workflows/pytest.yml/badge.svg?branch=master)](https://github.com/saeedghsh/rclone_wrapper/actions/workflows/pytest.yml)
+[![pytest-cov](https://github.com/saeedghsh/rclone_wrapper/actions/workflows/pytest-cov.yml/badge.svg?branch=master)](https://github.com/saeedghsh/rclone_wrapper/actions/workflows/pytest-cov.yml)
+
 # rclone wrappers
 A bunch of simle utilities for using rclone.
 ATM, we are interested in simple operations such as mounting, copy, check (content comparison), navigation, etc.
@@ -5,6 +11,7 @@ To be extended upon need.
 
 ## Usage examples
 
+**Bash script version**:
 ```bash
 $ source rclone_wrapper.sh
 $ nav_gdrive # to navigate the remote in command line
@@ -13,6 +20,19 @@ $ gumount # execute to see help
 $ is_the_same # execute to see help
 $ copy_to_gdrive # execute to see help
 $ copy_from_gdrive # execute to see help
+```
+
+**Python version**:
+```bash
+$ pip install -r requirements.txt
+$ python -m main navigate
+```
+
+## Ignoring changes in configuration file
+**Note:** this is done once and don't need to be repeated.
+```bash
+git update-index --assume-unchanged rclone_wrapper/config.yaml
+git update-index --no-assume-unchanged rclone_wrapper/config.yaml # To undo
 ```
 
 ## TODO
