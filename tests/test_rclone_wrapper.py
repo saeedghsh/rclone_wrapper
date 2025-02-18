@@ -10,6 +10,13 @@ from rclone_wrapper.comparison import compare_folders
 from rclone_wrapper.configuration import read_config
 from rclone_wrapper.mounting import is_mounted, mount, unmount
 from rclone_wrapper.navigation import _list_dirs, navigate
+from rclone_wrapper.transferring import (
+    _remote_path_exists,
+    _validate_local_destination,
+    _validate_remote_destination,
+    download,
+    upload,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -246,3 +253,183 @@ def test_compare_folders_exception() -> None:
         with pytest.raises(OSError):
             compare_folders("folder1", "folder2", "diff.txt")
         mock_logger.assert_called()  # Ensure an error was logged
+
+
+@pytest.mark.parametrize(
+    "mode, error_message, expected",
+    [
+        ("dir", "directory not found", False),  # Directory does not exist
+        ("file_or_dir", "object not found", False),  # Generic not found case
+    ],
+)
+def test_remote_path_exists_not_found(mode: str, error_message: str, expected: bool) -> None:
+    with patch(
+        "subprocess.run",
+        side_effect=subprocess.CalledProcessError(1, "rclone", stderr=error_message),
+    ):
+        assert _remote_path_exists("remote:path", mode) == expected
+
+
+@pytest.mark.parametrize(
+    "mode, stdout, expected",
+    [
+        ("dir", "12345 folder_name\n", True),  # Directory exists
+        ("file_or_dir", "file.txt\n", True),  # File or directory exists
+    ],
+)
+def test_remote_path_exists_found(mode: str, stdout: str, expected: bool) -> None:
+    with patch(
+        "subprocess.run",
+        return_value=MagicMock(returncode=0, stdout=stdout, stderr=""),
+    ):
+        assert _remote_path_exists("remote:path", mode) == expected
+
+
+@pytest.mark.parametrize(
+    "mode, error_type",
+    [
+        ("dir", subprocess.CalledProcessError(1, "rclone", stderr="some error")),
+        ("file_or_dir", FileNotFoundError("rclone not found")),
+        ("dir", PermissionError("permission denied")),
+    ],
+)
+def test_remote_path_exists_errors(mode: str, error_type: Exception) -> None:
+    with (
+        patch("subprocess.run", side_effect=error_type),
+        patch("rclone_wrapper.transferring.logger.error") as mock_logger,
+    ):
+        with pytest.raises(type(error_type)):
+            _remote_path_exists("remote:path", mode)
+        mock_logger.assert_called()  # Ensure an error was logged
+
+
+@pytest.mark.parametrize(
+    "remote_exists, target_exists, expected",
+    [
+        (False, False, False),  # Remote destination does not exist
+        (True, True, False),  # Target file/dir already exists in remote destination
+        (True, False, True),  # Valid destination
+    ],
+)
+def test_validate_remote_destination(
+    remote_exists: bool, target_exists: bool, expected: bool
+) -> None:
+    with (
+        patch(
+            "rclone_wrapper.transferring._remote_path_exists",
+            side_effect=[remote_exists, target_exists],
+        ),
+        patch("rclone_wrapper.transferring.logger.error") as mock_logger,
+    ):
+        result = _validate_remote_destination("remote_path", "/local/path", "gdrive")
+        assert result == expected
+        if not expected:
+            mock_logger.assert_called()  # Ensures at least one error was logged
+        else:
+            mock_logger.assert_not_called()  # No errors should be logged for valid destinations
+
+
+def test_upload_invalid_destination() -> None:
+    with (
+        patch("rclone_wrapper.transferring._validate_remote_destination", return_value=False),
+        patch("rclone_wrapper.transferring.logger.info") as mock_logger,
+    ):
+        upload("remote_path", "/local/path", "gdrive")
+        mock_logger.assert_not_called()  # Ensure no upload attempt was made
+
+
+def test_upload_success() -> None:
+    with (
+        patch("rclone_wrapper.transferring._validate_remote_destination", return_value=True),
+        patch("subprocess.run", return_value=MagicMock(returncode=0)) as mock_run,
+        patch("rclone_wrapper.transferring.logger.info") as mock_logger,
+    ):
+        upload("remote_path", "/local/path", "gdrive")
+        mock_run.assert_called_once_with(
+            ["rclone", "copy", "--progress", "/local/path", "gdrive:remote_path/path"],
+            check=True,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        assert mock_logger.call_count >= 1  # Ensure at least one info log was made
+
+
+def test_upload_failure() -> None:
+    with (
+        patch("rclone_wrapper.transferring._validate_remote_destination", return_value=True),
+        patch(
+            "subprocess.run",
+            side_effect=subprocess.CalledProcessError(1, "rclone", stderr="Upload failed"),
+        ) as mock_run,
+        patch("rclone_wrapper.transferring.logger.error") as mock_logger,
+    ):
+        with pytest.raises(subprocess.CalledProcessError):
+            upload("remote_path", "/local/path", "gdrive")
+        mock_run.assert_called_once()
+        mock_logger.assert_called()
+
+
+@pytest.mark.parametrize(
+    "local_exists, target_exists, expected",
+    [
+        (False, False, False),  # Local destination does not exist
+        (True, True, False),  # Target file/dir already exists in local destination
+        (True, False, True),  # Valid destination
+    ],
+)
+def test_validate_local_destination(
+    local_exists: bool, target_exists: bool, expected: bool
+) -> None:
+    with (
+        patch("os.path.isdir", return_value=local_exists),
+        patch("os.path.exists", return_value=target_exists),
+        patch("rclone_wrapper.transferring.logger.error") as mock_logger,
+    ):
+        result = _validate_local_destination("remote_path", "/local/path")
+        assert result == expected
+        if not expected:
+            mock_logger.assert_called()
+        else:
+            mock_logger.assert_not_called()
+
+
+def test_download_invalid_destination() -> None:
+    with (
+        patch("rclone_wrapper.transferring._validate_local_destination", return_value=False),
+        patch("rclone_wrapper.transferring.logger.info") as mock_logger,
+    ):
+        download("remote_path", "/local/path", "gdrive")
+        mock_logger.assert_not_called()  # Ensure no download attempt was made
+
+
+def test_download_success() -> None:
+    with (
+        patch("rclone_wrapper.transferring._validate_local_destination", return_value=True),
+        patch("subprocess.run", return_value=MagicMock(returncode=0)) as mock_run,
+        patch("rclone_wrapper.transferring.logger.info") as mock_logger,
+    ):
+        download("remote_path", "/local/path", "gdrive")
+
+        mock_run.assert_called_once_with(
+            ["rclone", "copy", "--progress", "gdrive:remote_path", "/local/path/remote_path"],
+            check=True,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        mock_logger.assert_called()
+
+
+def test_download_failure() -> None:
+    with (
+        patch("rclone_wrapper.transferring._validate_local_destination", return_value=True),
+        patch(
+            "subprocess.run",
+            side_effect=subprocess.CalledProcessError(1, "rclone", stderr="Download failed"),
+        ) as mock_run,
+        patch("rclone_wrapper.transferring.logger.error") as mock_logger,
+    ):
+        with pytest.raises(subprocess.CalledProcessError):
+            download("remote_path", "/local/path", "gdrive")
+
+        mock_run.assert_called_once()
+        mock_logger.assert_called()

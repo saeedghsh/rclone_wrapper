@@ -13,6 +13,7 @@ from rclone_wrapper.comparison import compare_folders
 from rclone_wrapper.configuration import read_config
 from rclone_wrapper.mounting import mount, unmount
 from rclone_wrapper.navigation import navigate
+from rclone_wrapper.transferring import download, upload
 
 logger = setup_logger(name_appendix=__name__)
 
@@ -35,6 +36,14 @@ def _main_compare(args: argparse.Namespace, config: SimpleNamespace) -> None:
     compare_folders(args.local_folder, f"{config.remote}:{args.remote_folder}", diff_file)
 
 
+def _main_upload(args: argparse.Namespace, config: SimpleNamespace) -> None:
+    upload(args.remote_path, args.local_path, config.remote)
+
+
+def _main_download(args: argparse.Namespace, config: SimpleNamespace) -> None:
+    download(args.remote_path, args.local_path, config.remote)
+
+
 def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="rclone wrapper operations")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -55,6 +64,16 @@ def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
     compare_parser.set_defaults(func=_main_compare)
     compare_parser.add_argument("--remote-folder", help="Remote folder")
     compare_parser.add_argument("--local-folder", help="Local folder")
+
+    upload_parser = subparsers.add_parser("upload", help="Upload local file/dir")
+    upload_parser.set_defaults(func=_main_upload)
+    upload_parser.add_argument("--remote-path", help="Remote path to upload to")
+    upload_parser.add_argument("--local-path", help="Path to local file/dir to upload")
+
+    download_parser = subparsers.add_parser("download", help="Download remote file/dir")
+    download_parser.set_defaults(func=_main_download)
+    download_parser.add_argument("--remote-path", help="Path to remote file/dir to download")
+    download_parser.add_argument("--local-path", help="Local path to download to")
 
     return parser.parse_args(argv)
 
