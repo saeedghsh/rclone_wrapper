@@ -12,19 +12,6 @@ To be extended upon need.
 
 ## Usage examples
 
-<details>
-<summary>Bash script version</summary>
-
-```bash
-$ source rclone_wrapper.sh
-$ nav_gdrive
-$ gmount
-$ gumount
-$ is_the_same
-$ copy_to_gdrive
-$ copy_from_gdrive
-```
-</details>
 
 ### Python version
 The rclone config name for the remote should be placed in `rclone_wrapper/config.yaml`.
