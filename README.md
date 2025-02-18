@@ -12,11 +12,12 @@ To be extended upon need.
 
 ## Usage examples
 
-
-### Python version
+### Remote authentication setup
+Follow [this instructions](docs/instructions_rclone_gcp_oauth_setup.md) to setup rclone OAuth with GCP for Google Drive.
 The rclone config name for the remote should be placed in `rclone_wrapper/config.yaml`.
 
-Make sure dependencies are installed
+### Python version
+Install dependencies
 ```bash
 $ pip install -r requirements.txt
 ```
