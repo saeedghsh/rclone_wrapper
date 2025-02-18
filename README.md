@@ -30,6 +30,11 @@ $ python -m main upload --remote-path <path> --local-path <path>
 $ python -m main download --remote-path <path> --local-path <path>
 ```
 
+NOTE on upload/download:
+download and upload operations behave like UNIX `cp -r` and not like `mv`.
+Source (local or remote) can be a file or a directory, but destination has to be a directory onto which the src object is copied to.
+There is a guardrail against overwriting a dir/file at destination.
+
 ## Development
 
 <details>
