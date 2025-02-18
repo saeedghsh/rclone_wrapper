@@ -39,6 +39,18 @@ There is a guardrail against overwriting a dir/file at destination.
 ## Development
 
 <details>
+<summary>Code quality checks</summary>
+
+```bash
+mypy .
+pylint .
+pytest .
+isort .
+black .
+```
+</details>
+
+<details>
 <summary>Keeping Configuration File Changes Untracked by Git</summary>
 
 Once set, these commands do not need to be repeated.
