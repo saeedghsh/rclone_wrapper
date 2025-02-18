@@ -23,7 +23,7 @@ def _main_navigate(_: argparse.Namespace, config: SimpleNamespace) -> None:
 
 
 def _main_mount(args: argparse.Namespace, config: SimpleNamespace) -> None:
-    mount(args.remote_folder, args.mount_point, config.remote)
+    mount(args.remote_path, args.mount_point, config.remote)
 
 
 def _main_unmount(args: argparse.Namespace, _: SimpleNamespace) -> None:
@@ -33,7 +33,7 @@ def _main_unmount(args: argparse.Namespace, _: SimpleNamespace) -> None:
 def _main_compare(args: argparse.Namespace, config: SimpleNamespace) -> None:
     current_time = datetime.now().strftime("%Y%m%dT%H%M%S")
     diff_file = f"results/{current_time}_comparison.txt"
-    compare_folders(args.local_folder, f"{config.remote}:{args.remote_folder}", diff_file)
+    compare_folders(args.local_path, f"{config.remote}:{args.remote_path}", diff_file)
 
 
 def _main_upload(args: argparse.Namespace, config: SimpleNamespace) -> None:
@@ -48,22 +48,22 @@ def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="rclone wrapper operations")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    navigate_parser = subparsers.add_parser("navigate", help="Interactively navigate Google Drive")
+    navigate_parser = subparsers.add_parser("navigate", help="Interactively navigate remote")
     navigate_parser.set_defaults(func=_main_navigate)
 
-    mount_parser = subparsers.add_parser("mount", help="Mount a remote folder")
+    mount_parser = subparsers.add_parser("mount", help="Mount a remote path")
     mount_parser.set_defaults(func=_main_mount)
-    mount_parser.add_argument("--remote-folder", help="Remote folder to mount")
+    mount_parser.add_argument("--remote-path", help="Remote path to mount")
     mount_parser.add_argument("--mount-point", help="Local mount point")
 
     unmount_parser = subparsers.add_parser("unmount", help="Unmount a mount point")
     unmount_parser.set_defaults(func=_main_unmount)
     unmount_parser.add_argument("--mount-point", help="Local mount point to unmount")
 
-    compare_parser = subparsers.add_parser("compare", help="Compare folders (see results/ folder)")
+    compare_parser = subparsers.add_parser("compare", help="Compare paths (diffs in results/)")
     compare_parser.set_defaults(func=_main_compare)
-    compare_parser.add_argument("--remote-folder", help="Remote folder")
-    compare_parser.add_argument("--local-folder", help="Local folder")
+    compare_parser.add_argument("--remote-path", help="Remote path")
+    compare_parser.add_argument("--local-path", help="Local path")
 
     upload_parser = subparsers.add_parser("upload", help="Upload local file/dir")
     upload_parser.set_defaults(func=_main_upload)

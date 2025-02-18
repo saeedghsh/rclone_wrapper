@@ -37,8 +37,8 @@ $ pip install -r requirements.txt
 Run commands
 ```bash
 $ python -m main navigate
-$ python -m main mount --remote_folder <remote-folder> --mount_point <mount-point>
-$ python -m main compare --remote-folder <remote-folder> --local-folder <local-folder>
+$ python -m main mount --remote_path <path> --mount_point <mount-point>
+$ python -m main compare --remote-path <path> --local-path <path>
 $ python -m main upload --remote-path <path> --local-path <path>
 $ python -m main download --remote-path <path> --local-path <path>
 ```
