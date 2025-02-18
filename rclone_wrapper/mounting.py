@@ -8,62 +8,78 @@ logger = logging.getLogger(__name__)
 
 
 def is_mounted(mount_point: str) -> bool:
-    """Return True if the specified mount point is already mounted."""
+    """Check if a directory is a valid mount point."""
+
+    if not os.path.exists(mount_point):
+        logger.warning("Path '%s' does not exist.", mount_point)
+        return False  # Explicitly log and return False
+
     try:
         subprocess.run(["mountpoint", "-q", mount_point], check=True)
-        return True  # If we reach here, return code was 0 (mounted)
-    except subprocess.CalledProcessError as e:
-        if e.returncode == 1:
-            return False  # Expected "not mounted" case
-        raise  # Other `CalledProcessError`s should propagate # pragma: no cover
+        return True  # exists and is a mount point
+
+    except subprocess.CalledProcessError as exc:
+        if exc.returncode == 32:
+            return False  # exists and not a mount point, safe to ignore
+        logger.error("Unexpected error checking mount point '%s': %s", mount_point, exc)
+        raise
+
     except (FileNotFoundError, PermissionError) as exc:
-        logger.error("checking mount point '%s': %s", mount_point, exc)
-        raise  # Re-raise to ensure a clear failure message
+        logger.error("Error accessing mount point '%s': %s", mount_point, exc)
+        raise
 
 
-def mount(remote_folder: str, mount_point: str, remote: str) -> None:
-    """Mount a remote folder to a specified local mount point using rclone."""
+def mount(remote_path: str, mount_point: str, remote: str) -> None:
+    """Mount a remote folder to a local directory using rclone."""
+
     if is_mounted(mount_point):
         logger.error("'%s' is already mounted.", mount_point)
         return
 
-    os.makedirs(mount_point, exist_ok=True)
+    if not os.path.exists(mount_point):
+        logger.info("Creating mount point directory: '%s'", mount_point)
+        os.makedirs(mount_point, exist_ok=True)  # Ensure the directory exists
 
-    command = [
-        "nohup",
-        "rclone",
-        "mount",
-        f"{remote}:{remote_folder}",
-        mount_point,
-        "--vfs-cache-mode",
-        "writes",
-    ]
-    # Popen only needs `with` if we plan to `wait()` or `communicate()`
-    # Using `with` is not appropriate for long-running processes like `rclone mount`.
-    subprocess.Popen(  # pylint: disable=consider-using-with
-        command,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        stdin=subprocess.DEVNULL,
-        start_new_session=True,
-    )
-    logger.info("Mounted '%s' to '%s", remote_folder, mount_point)
+    logger.info("Mounting '%s:%s' to '%s'...", remote, remote_path, mount_point)
+    try:
+        # Popen only needs `with` if we plan to `wait()` or `communicate()`
+        # Using `with` is not appropriate for long-running processes like `rclone mount`.
+        subprocess.Popen(  # pylint: disable=consider-using-with
+            [
+                "nohup",
+                "rclone",
+                "mount",
+                f"{remote}:{remote_path}",
+                mount_point,
+                "--vfs-cache-mode",
+                "writes",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        logger.info("Mounted '%s' to '%s'", remote_path, mount_point)
+    except subprocess.SubprocessError as exc:
+        logger.error("Failed to mount '%s' to '%s': %s", remote_path, mount_point, exc)
+        raise
 
 
 def unmount(mount_point: str) -> None:
     """Unmount a local mount point."""
-    if not is_mounted(mount_point):
-        logger.error("'%s' is not a mount point.", mount_point)
+
+    if not os.path.exists(mount_point):
+        logger.error("Mount point '%s' does not exist. Cannot unmount.", mount_point)
         return
+
+    if not is_mounted(mount_point):
+        logger.info("'%s' is not a mount point. Nothing to unmount.", mount_point)
+        return
+
+    logger.info("Unmounting '%s'...", mount_point)
     try:
         subprocess.run(["fusermount", "-uz", mount_point], check=True)
         logger.info("Unmounted '%s'", mount_point)
-    except subprocess.CalledProcessError as e:
-        if e.returncode == 1:  # Expected "not mounted" case
-            logger.error("'%s' is already unmounted or not a valid mount point.", mount_point)
-        else:  # pragma: no cover
-            logger.error("Failed to unmount '%s': %s", mount_point, e)
-            raise
-    except (FileNotFoundError, PermissionError) as exc:  # pragma: no cover
-        logger.error("Error unmounting '%s': %s", mount_point, exc)
+    except subprocess.CalledProcessError as exc:
+        logger.error("Failed to unmount '%s': %s", mount_point, exc)
         raise

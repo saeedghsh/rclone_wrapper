@@ -147,20 +147,38 @@ def test_read_config_invalid_format() -> None:
 
 @pytest.mark.parametrize(
     "returncode, expected",
-    [(0, True), (1, False)],
+    [(0, True), (32, False)],  # Exit code 32 means "not a mount point"
 )
 def test_is_mounted(returncode: int, expected: bool) -> None:
-    with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = (
-            subprocess.CalledProcessError(returncode, "mountpoint") if returncode else None
-        )
+    with patch("os.path.exists", return_value=True), patch("subprocess.run") as mock_run:
+        if returncode:  # Simulate an error response only if returncode is non-zero
+            mock_run.side_effect = subprocess.CalledProcessError(returncode, "mountpoint")
         result = is_mounted("/mnt/test")
         assert result == expected
 
 
+def test_is_mounted_non_existent_path() -> None:
+    with patch("os.path.exists", return_value=False), patch("subprocess.run") as mock_run:
+        result = is_mounted("/mnt/nonexistent")
+        assert result is False  # Should return False for non-existent path
+        mock_run.assert_not_called()  # Ensure `subprocess.run()` was never executed
+
+
 def test_is_mounted_error() -> None:
-    with patch("subprocess.run", side_effect=FileNotFoundError("mountpoint not found")):
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("subprocess.run", side_effect=FileNotFoundError("mountpoint not found")),
+    ):
         with pytest.raises(FileNotFoundError):
+            is_mounted("/mnt/test")
+
+
+def test_is_mounted_unexpected_error() -> None:
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("subprocess.run", side_effect=subprocess.CalledProcessError(99, "mountpoint")),
+    ):
+        with pytest.raises(subprocess.CalledProcessError):  # Ensure exception is raised
             is_mounted("/mnt/test")
 
 
@@ -184,6 +202,18 @@ def test_mount_success() -> None:
             mock_logger.assert_called()
 
 
+def test_mount_subprocess_error() -> None:
+    with (
+        patch("rclone_wrapper.mounting.is_mounted", return_value=False),
+        patch("os.makedirs"),
+        patch("subprocess.Popen", side_effect=subprocess.SubprocessError("Mount failed")),
+        patch("rclone_wrapper.mounting.logger.error") as mock_logger,
+    ):
+        with pytest.raises(subprocess.SubprocessError):
+            mount("remote_folder", "/mnt/test", "gdrive")
+        mock_logger.assert_called()
+
+
 def test_unmount_not_mounted() -> None:
     with patch("rclone_wrapper.mounting.is_mounted", return_value=False):
         with patch("rclone_wrapper.mounting.logger.error") as mock_logger:
@@ -192,28 +222,43 @@ def test_unmount_not_mounted() -> None:
 
 
 def test_unmount_success() -> None:
-    with patch("rclone_wrapper.mounting.is_mounted", return_value=True):
-        with (
-            patch("subprocess.run") as mock_run,
-            patch("rclone_wrapper.mounting.logger.info") as mock_logger,
-        ):
-            mock_run.return_value = MagicMock(returncode=0)
-            unmount("/mnt/test")
-            mock_run.assert_called_with(["fusermount", "-uz", "/mnt/test"], check=True)
-            mock_logger.assert_called()
+    with (
+        patch("rclone_wrapper.mounting.is_mounted", return_value=True),
+        patch("os.path.exists", return_value=True),
+        patch("subprocess.run") as mock_run,
+        patch("rclone_wrapper.mounting.logger.info") as mock_logger,
+    ):
+        mock_run.return_value = MagicMock(returncode=0)
+        unmount("/mnt/test")
+        mock_run.assert_called_with(["fusermount", "-uz", "/mnt/test"], check=True)
+        mock_logger.assert_called()
 
 
 def test_unmount_error() -> None:
-    with patch("rclone_wrapper.mounting.is_mounted", return_value=True):
-        with (
-            patch(
-                "subprocess.run", side_effect=subprocess.CalledProcessError(1, "fusermount")
-            ) as mock_run,
-            patch("rclone_wrapper.mounting.logger.error") as mock_logger,
-        ):
+    with (
+        patch("rclone_wrapper.mounting.is_mounted", return_value=True),
+        patch("os.path.exists", return_value=True),
+        patch(
+            "subprocess.run", side_effect=subprocess.CalledProcessError(1, "fusermount")
+        ) as mock_run,
+        patch("rclone_wrapper.mounting.logger.error") as mock_logger,
+    ):
+        with pytest.raises(subprocess.CalledProcessError):
             unmount("/mnt/test")
-            mock_run.assert_called_with(["fusermount", "-uz", "/mnt/test"], check=True)
-            mock_logger.assert_called()
+        mock_run.assert_called_with(["fusermount", "-uz", "/mnt/test"], check=True)
+        mock_logger.assert_called()
+
+
+def test_unmount_already_unmounted() -> None:
+    with (
+        patch("rclone_wrapper.mounting.is_mounted", return_value=False),
+        patch("os.path.exists", return_value=True),
+        patch("rclone_wrapper.mounting.logger.info") as mock_logger,
+        patch("subprocess.run") as mock_run,
+    ):
+        unmount("/mnt/test")
+        mock_logger.assert_called()
+        mock_run.assert_not_called()  # Ensure `fusermount -uz` was NOT called
 
 
 @pytest.mark.parametrize(
