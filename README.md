@@ -10,6 +10,10 @@ A bunch of simple utilities for using rclone.
 ATM, we are interested in simple operations such as mounting, copy, check (content comparison), navigation, etc.
 To be extended upon need.
 
+🚨 **Disclaimer: Experimental & Potentially Buggy**  
+This project is still a work in progress and may contain bugs or unexpected behavior.
+
+
 ## Usage examples
 
 ### Remote authentication setup
