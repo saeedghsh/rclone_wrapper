@@ -29,7 +29,7 @@ $ pip install -r requirements.txt
 Run commands
 ```bash
 $ python -m main navigate
-$ python -m main mount --remote_path <path> --mount_point <mount-point>
+$ python -m main mount --remote-path <path> --mount-point <mount-point>
 $ python -m main compare --remote-path <path> --local-path <path>
 $ python -m main upload --remote-path <path> --local-path <path>
 $ python -m main download --remote-path <path> --local-path <path>
