@@ -71,7 +71,7 @@ def upload(remote_path: str, local_path: str, remote: str) -> None:
     logger.info("Uploading '%s' to '%s:%s'...", local_path, remote, target_path)
     try:
         subprocess.run(
-            ["rclone", "copy", "--progress", local_path, f"{remote}:{target_path}"],
+            ["rclone", "copy", "--progress", "--checksum", local_path, f"{remote}:{target_path}"],
             check=True,
             stderr=subprocess.PIPE,
             text=True,
@@ -125,7 +125,7 @@ def download(remote_path: str, local_path: str, remote: str) -> None:
     logger.info("Downloading '%s:%s' to '%s'...", remote, remote_path, target_path)
     try:
         subprocess.run(
-            ["rclone", "copy", "--progress", f"{remote}:{remote_path}", target_path],
+            ["rclone", "copy", "--progress", "--checksum", f"{remote}:{remote_path}", target_path],
             check=True,
             stderr=subprocess.PIPE,
             text=True,

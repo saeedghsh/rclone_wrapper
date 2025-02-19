@@ -391,7 +391,14 @@ def test_upload_success() -> None:
     ):
         upload("remote_path", "/local/path", "gdrive")
         mock_run.assert_called_once_with(
-            ["rclone", "copy", "--progress", "/local/path", "gdrive:remote_path/path"],
+            [
+                "rclone",
+                "copy",
+                "--progress",
+                "--checksum",
+                "/local/path",
+                "gdrive:remote_path/path",
+            ],
             check=True,
             stderr=subprocess.PIPE,
             text=True,
@@ -456,7 +463,14 @@ def test_download_success() -> None:
         download("remote_path", "/local/path", "gdrive")
 
         mock_run.assert_called_once_with(
-            ["rclone", "copy", "--progress", "gdrive:remote_path", "/local/path/remote_path"],
+            [
+                "rclone",
+                "copy",
+                "--progress",
+                "--checksum",
+                "gdrive:remote_path",
+                "/local/path/remote_path",
+            ],
             check=True,
             stderr=subprocess.PIPE,
             text=True,
