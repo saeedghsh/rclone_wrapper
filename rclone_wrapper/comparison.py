@@ -2,16 +2,19 @@
 
 import logging
 import subprocess
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
-def compare_folders(folder1: str, folder2: str, diff_file: str) -> bool:
+def compare_folders(folder1: str, folder2: str) -> bool:
     """
     Compare two folders (local or remote) using rclone check with --checksum.
     Returns True if the folders are identical, False if differences are detected.
     If differences are detected and diff_file is provided, the output is stored in that file.
     """
+    current_time = datetime.now().strftime("%Y%m%dT%H%M%S")
+    diff_file = f"results/{current_time}_comparison.txt"
     command = ["rclone", "check", folder1, folder2, "--checksum"]
     try:
         result = subprocess.run(

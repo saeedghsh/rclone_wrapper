@@ -4,7 +4,6 @@
 import argparse
 import os
 import sys
-from datetime import datetime
 from types import SimpleNamespace
 from typing import Sequence
 
@@ -31,9 +30,7 @@ def _main_unmount(args: argparse.Namespace, _: SimpleNamespace) -> None:
 
 
 def _main_compare(args: argparse.Namespace, config: SimpleNamespace) -> None:
-    current_time = datetime.now().strftime("%Y%m%dT%H%M%S")
-    diff_file = f"results/{current_time}_comparison.txt"
-    compare_folders(args.local_path, f"{config.remote}:{args.remote_path}", diff_file)
+    compare_folders(args.local_path, f"{config.remote}:{args.remote_path}")
 
 
 def _main_upload(args: argparse.Namespace, config: SimpleNamespace) -> None:

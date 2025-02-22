@@ -279,13 +279,13 @@ def test_compare_folders(
         patch("rclone_wrapper.comparison.logger.info") as mock_logger,
         patch("builtins.open", mock_open()) as mock_file,
     ):
-        result = compare_folders("folder1", "folder2", "diff.txt")
+        result = compare_folders("folder1", "folder2")
         assert result == expected
         mock_logger.assert_called()  # Ensure logging happened
 
         # Ensure the diff file was only written if differences were detected
         if expect_diff_file:
-            mock_file.assert_called_once_with("diff.txt", "w", encoding="utf-8")
+            mock_file.assert_called_once()
         else:
             mock_file.assert_not_called()
 
@@ -296,7 +296,7 @@ def test_compare_folders_exception() -> None:
         patch("rclone_wrapper.comparison.logger.error") as mock_logger,
     ):
         with pytest.raises(OSError):
-            compare_folders("folder1", "folder2", "diff.txt")
+            compare_folders("folder1", "folder2")
         mock_logger.assert_called()  # Ensure an error was logged
 
 
