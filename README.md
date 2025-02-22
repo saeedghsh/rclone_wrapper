@@ -78,6 +78,6 @@ git update-index --no-skip-worktree rclone_wrapper/config.yaml # To undo
 Copyright (C) Saeed Gholami Shahbandi
 ```
 
-Distributed with a GNU GENERAL PUBLIC LICENSE; see [LICENSE](https://github.com/saeedghsh/rclone_wapper/blob/master/LICENSE).  
+Distributed with a GNU GENERAL PUBLIC LICENSE; see [LICENSE](https://github.com/saeedghsh/rclone_wrapper/blob/master/LICENSE).  
 
 **NOTE:** Portions of this code/project were developed with the assistance of ChatGPT (a product of OpenAI) and Copilot (A product of Microsoft).
