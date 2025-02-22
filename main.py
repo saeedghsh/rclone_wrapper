@@ -53,27 +53,27 @@ def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
 
     mount_parser = subparsers.add_parser("mount", help="Mount a remote path")
     mount_parser.set_defaults(func=_main_mount)
-    mount_parser.add_argument("--remote-path", help="Remote path to mount")
-    mount_parser.add_argument("--mount-point", help="Local mount point")
+    mount_parser.add_argument("-r", "--remote-path", help="Remote path to mount")
+    mount_parser.add_argument("-m", "--mount-point", help="Local mount point")
 
     unmount_parser = subparsers.add_parser("unmount", help="Unmount a mount point")
     unmount_parser.set_defaults(func=_main_unmount)
-    unmount_parser.add_argument("--mount-point", help="Local mount point to unmount")
+    unmount_parser.add_argument("-m", "--mount-point", help="Local mount point to unmount")
 
     compare_parser = subparsers.add_parser("compare", help="Compare paths (diffs in results/)")
     compare_parser.set_defaults(func=_main_compare)
-    compare_parser.add_argument("--remote-path", help="Remote path")
-    compare_parser.add_argument("--local-path", help="Local path")
+    compare_parser.add_argument("-r", "--remote-path", help="Remote path")
+    compare_parser.add_argument("-l", "--local-path", help="Local path")
 
     upload_parser = subparsers.add_parser("upload", help="Upload local file/dir")
     upload_parser.set_defaults(func=_main_upload)
-    upload_parser.add_argument("--remote-path", help="Remote path to upload to")
-    upload_parser.add_argument("--local-path", help="Path to local file/dir to upload")
+    upload_parser.add_argument("-r", "--remote-path", help="Remote path to upload to")
+    upload_parser.add_argument("-l", "--local-path", help="Path to local file/dir to upload")
 
     download_parser = subparsers.add_parser("download", help="Download remote file/dir")
     download_parser.set_defaults(func=_main_download)
-    download_parser.add_argument("--remote-path", help="Path to remote file/dir to download")
-    download_parser.add_argument("--local-path", help="Local path to download to")
+    download_parser.add_argument("-r", "--remote-path", help="Path to remote file/dir to download")
+    download_parser.add_argument("-l", "--local-path", help="Local path to download to")
 
     return parser.parse_args(argv)
 
