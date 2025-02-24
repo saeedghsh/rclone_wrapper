@@ -29,10 +29,14 @@ $ pip install -r requirements.txt
 Run commands
 ```bash
 $ python -m main navigate
-$ python -m main mount --remote-path <path> --mount-point <mount-point>
-$ python -m main compare --remote-path <path> --local-path <path>
-$ python -m main upload --remote-path <path> --local-path <path>
-$ python -m main download --remote-path <path> --local-path <path>
+
+$ python -m main mount -r <remote-path> -m <mount-point>
+$ python -m main unmount -m <mount-point>
+
+$ python -m main upload -r <remote-path> -l <local-path>
+$ python -m main download -r <remote-path> -l <local-path>
+
+$ python -m main compare -r <remote-path> -l <local-path>
 ```
 
 NOTE on upload/download:
